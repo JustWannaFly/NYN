@@ -3,28 +3,77 @@
 
 #include "NYN.h"
 
-//Screen dimension constants
+SDL_Window* gWindow;
+SDL_Surface* gScreenSurface;
+SDL_Surface* gHelloWorld;
+
 const int SCREEN_WIDTH = 640;
 const int SCREEN_HEIGHT = 480;
 
-int main(int argc, char* args[]) {
-	SDL_Window* window = NULL;
-	SDL_Surface* screenSurface = NULL;
+bool init() {
+	bool success = true;
 	if (SDL_Init(SDL_INIT_VIDEO) < 0) {
+		success = false;
 		std::cout << "SDL could not initialize! SDL_Error: " << SDL_GetError() << std::endl;
 	} else {
-		window = SDL_CreateWindow("SDL Tutorial", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_SHOWN);
-		if (window == NULL) {
+		gWindow = SDL_CreateWindow("SDL Tutorial", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_SHOWN);
+		if (gWindow == NULL) {
+			success = false;
 			std::cout << "Window could not be created! SDL_Error: " << SDL_GetError() << std::endl;
 		} else {
-			screenSurface = SDL_GetWindowSurface(window);
-			SDL_FillRect(screenSurface, NULL, SDL_MapRGB(screenSurface->format, 0xFF, 0xFF, 0xFF));
-			SDL_UpdateWindowSurface(window);
-			SDL_Delay(2000);
+			gScreenSurface = SDL_GetWindowSurface(gWindow);
 		}
 	}
+	return success;
+}
 
-	SDL_DestroyWindow(window);
+bool loadMedia() {
+	bool success = true;
+
+	gHelloWorld = SDL_LoadBMP("hello_world.bmp");
+	if (gHelloWorld == NULL) {
+		success = false;
+		std::cout << "Error loading image. SDL Error: " << SDL_GetError() << std::endl;
+	}
+	return success;
+}
+
+void blit() {
+	SDL_BlitSurface(gHelloWorld, NULL, gScreenSurface, NULL);
+}
+
+void close() {
+	SDL_FreeSurface(gHelloWorld);
+	gHelloWorld = NULL;
+
+	SDL_DestroyWindow(gWindow);
+	gWindow = NULL;
+
 	SDL_Quit();
+}
+
+int main(int argc, char* args[]) {
+	bool quit = false;
+	SDL_Event e;
+
+	if (!init()) {
+		std::cout << "Failed to initalize!" << std::endl;
+		quit = true;
+	} else {
+		if (!loadMedia()) {
+			std::cout << "Failed to load media!" << std::endl;
+			quit = true;
+		}
+	}
+	while (!quit) {
+		while (SDL_PollEvent(&e) != 0) {
+			if (e.type == SDL_QUIT) {
+				quit = true;
+			}
+		}
+
+		SDL_BlitSurface(gHelloWorld, NULL, gScreenSurface, NULL);
+		SDL_UpdateWindowSurface(gWindow);
+	}
 	return 0;
 }
